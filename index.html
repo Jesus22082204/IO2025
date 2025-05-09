@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modelo de Transporte</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #e8f5e9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #333;
+    }
+
+    h2 {
+      color: #1b5e20;
+      margin-bottom: 15px;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    h3 {
+      color: #2e7d32;
+      margin: 20px 0 10px;
+      font-size: 18px;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .form-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: space-between;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 180px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #2e7d32;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 14px;
+    }
+
+    select, input {
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #a5d6a7;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border-radius: 6px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background-color: #3d8b40;
+      transform: translateY(-2px);
+    }
+
+    button.secondary {
+      background-color: #2196F3;
+    }
+
+    button.secondary:hover {
+      background-color: #1976D2;
+    }
+
+    .nombre-inputs {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-with-icon {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-with-icon i {
+      color: #2e7d32;
+      font-size: 14px;
+    }
+
+    canvas {
+      margin: 25px 0;
+      border: 1px solid #4caf50;
+      border-radius: 10px;
+      background: #f5fff5;
+    }
+
+    .restricciones-section {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .restriccion-group {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .restriccion-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .restriccion-item input {
+      width: 80px;
+    }
+
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .bus-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .bus-table th, .bus-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .bus-table th {
+      background-color: #e8f5e9;
+    }
+
+    .bus-table input {
+      width: 90%;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 5px;
+    }
+
+    .bus-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .bus-capacity {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bus-capacity input {
+      width: 80px;
+    }
+
+    .modelo-matematico {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      border-left: 4px solid #4caf50;
+    }
+
+    .formula {
+      font-size: 16px;
+      margin: 10px 0;
+      padding: 10px;
+      background-color: white;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h2>Modelo de Transporte</h2>
+
+  <div class="container">
+    <div class="form-section">
+      <div class="form-group">
+        <label>Tipo de problema:
+          <select id="tipo" onchange="actualizarEtiquetas()">
+            <option value="buses">Buses y Ciudades</option>
+            <option value="mercancia">Mercancía y Destinos</option>
+          </select>
+        </label>
+
+        <label>
+          <span id="label1-text">Cantidad de buses:</span>
+          <input type="number" id="origenes" min="1" max="4" value="2" onchange="generarInputs()">
+        </label>
+
+        <label>
+          <span id="label2-text">Cantidad de ciudades:</span>
+          <input type="number" id="destinos" min="1" max="4" value="2" onchange="generarInputs()">
+        </label>
+
+        <button onclick="dibujarRed()">
+          <i class="fas fa-project-diagram"></i> Mostrar red
+        </button>
+      </div>
+
+      <div class="nombre-inputs" id="inputs-origenes"></div>
+      <div class="nombre-inputs" id="inputs-destinos"></div>
+    </div>
+  </div>
+
+  <div class="canvas-container">
+    <canvas id="canvas-red" width="600" height="380"></canvas>
+  </div>
+
+  <div id="datos-section" class="container hidden">
+    <h3>Ingrese los datos del problema</h3>
+    <div id="tablas-buses"></div>
+    
+    <button onclick="generarModeloMatematico()" class="secondary">
+      <i class="fas fa-calculator"></i> Generar Modelo Matemático
+    </button>
+  </div>
+
+  <div id="modelo-matematico" class="container hidden">
+    <h3>Modelo Matemático</h3>
+    
+    <div class="modelo-matematico">
+      <h4>Función Objetivo (Minimizar costos):</h4>
+      <div id="funcion-objetivo" class="formula"></div>
+      
+      <h4>Restricciones de oferta:</h4>
+      <div id="restricciones-oferta" class="formula"></div>
+      
+      <h4>Restricciones de demanda:</h4>
+      <div id="restricciones-demanda" class="formula"></div>
+    </div>
+  </div>
+
+  <script>
+    const colors = ['#FF5252', '#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#607D8B'];
+    let animationId = null;
+    let m = 2, n = 2; // Valores iniciales
+    let tipoProblema = 'buses';
+    let origenLabels = [], destinoLabels = [];
+
+    function actualizarEtiquetas() {
+      tipoProblema = document.getElementById("tipo").value;
+      document.getElementById("label1-text").innerText = tipoProblema === "buses" ? "Cantidad de buses:" : "Cantidad de orígenes:";
+      document.getElementById("label2-text").innerText = tipoProblema === "buses" ? "Cantidad de ciudades:" : "Cantidad de destinos:";
+      generarInputs();
+    }
+
+    function generarInputs() {
+      m = Math.min(4, parseInt(document.getElementById("origenes").value));
+      n = Math.min(4, parseInt(document.getElementById("destinos").value));
+      
+      const contOrigenes = document.getElementById("inputs-origenes");
+      const contDestinos = document.getElementById("inputs-destinos");
+
+      contOrigenes.innerHTML = "<strong>" + (tipoProblema === "buses" ? "Buses" : "Orígenes") + ":</strong><br>";
+      for (let i = 0; i < m; i++) {
+        contOrigenes.innerHTML += `
+          <div class="input-with-icon">
+            <i class="fas ${tipoProblema === 'buses' ? 'fa-bus' : 'fa-warehouse'}"></i>
+            <input type="text" id="origen${i}" placeholder="${tipoProblema === 'buses' ? 'Bus' : 'O'} ${i + 1}">
+          </div>`;
+      }
+
+      contDestinos.innerHTML = "<strong>" + (tipoProblema === "buses" ? "Ciudades" : "Destinos") + ":</strong><br>";
+      for (let j = 0; j < n; j++) {
+        contDestinos.innerHTML += `
+          <div class="input-with-icon">
+            <i class="fas ${tipoProblema === 'buses' ? 'fa-city' : 'fa-map-marker-alt'}"></i>
+            <input type="text" id="destino${j}" placeholder="${tipoProblema === 'buses' ? 'Ciudad' : 'D'} ${j + 1}">
+          </div>`;
+      }
+
+      // Ocultar secciones secundarias inicialmente
+      document.getElementById('datos-section').classList.add('hidden');
+      document.getElementById('modelo-matematico').classList.add('hidden');
+    }
+
+    function dibujarRed() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+
+      const canvas = document.getElementById("canvas-red");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Obtener etiquetas
+      origenLabels = [];
+      destinoLabels = [];
+
+      for (let i = 0; i < m; i++) {
+        let nombre = document.getElementById(`origen${i}`).value.trim();
+        origenLabels.push(nombre || (tipoProblema === 'buses' ? `Bus ${i+1}` : `O${i+1}`));
+      }
+
+      for (let j = 0; j < n; j++) {
+        let nombre = document.getElementById(`destino${j}`).value.trim();
+        destinoLabels.push(nombre || (tipoProblema === 'buses' ? `Ciudad ${j+1}` : `D${j+1}`));
+      }
+
+      const origenX = 100, destinoX = 500;
+      const spacingY = 300 / Math.max(m, n);
+      let origenY = [], destinoY = [];
+
+      // Dibujar etiqueta de grupo para orígenes
+      ctx.font = "bold 14px Arial";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#00796b";
+      ctx.fillText(tipoProblema === 'buses' ? "Buses" : "Orígenes", origenX, 40);
+
+      // Dibujar nodos de origen
+      for (let i = 0; i < m; i++) {
+        let y = 70 + i * spacingY;
+        origenY.push(y);
+        
+        ctx.beginPath();
+        ctx.arc(origenX, y, 20, 0, 2 * Math.PI);
+        ctx.fillStyle = "#b2dfdb";
+        ctx.fill();
+        ctx.strokeStyle = "#00796b";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        const icon = tipoProblema === 'buses' ? '🚌' : '📦';
+        ctx.font = "18px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#333";
+        ctx.fillText(icon, origenX, y);
+        
+        ctx.font = "12px Arial";
+        ctx.textAlign = "right";
+        ctx.fillText(origenLabels[i], origenX - 30, y + 35);
+      }
+
+      // Dibujar etiqueta de grupo para destinos
+      ctx.font = "bold 14px Arial";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#2e7d32";
+      ctx.fillText(tipoProblema === 'buses' ? "Ciudades" : "Destinos", destinoX, 40);
+
+      // Dibujar nodos de destino
+      for (let j = 0; j < n; j++) {
+        let y = 70 + j * spacingY;
+        destinoY.push(y);
+        
+        ctx.beginPath();
+        ctx.arc(destinoX, y, 20, 0, 2 * Math.PI);
+        ctx.fillStyle = "#c8e6c9";
+        ctx.fill();
+        ctx.strokeStyle = "#2e7d32";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        const icon = tipoProblema === 'buses' ? '🏙️' : '📍';
+        ctx.font = "18px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#333";
+        ctx.fillText(icon, destinoX, y);
+        
+        ctx.font = "12px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(destinoLabels[j], destinoX + 30, y + 35);
+      }
+
+      // Animación de las flechas
+      let startTime = null;
+      const duration = 800;
+
+      function animate(currentTime) {
+        if (!startTime) startTime = currentTime;
+        const elapsedTime = currentTime - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+
+        ctx.clearRect(origenX + 20, 50, destinoX - origenX - 40, canvas.height - 50);
+
+        for (let i = 0; i < m; i++) {
+          for (let j = 0; j < n; j++) {
+            const color = colors[(i * n + j) % colors.length];
+            dibujarFlecha(
+              ctx, 
+              origenX + 20, origenY[i], 
+              destinoX - 20, destinoY[j], 
+              color, 
+              progress
+            );
+          }
+        }
+
+        if (progress < 1) {
+          animationId = requestAnimationFrame(animate);
+        } else {
+          animationId = null;
+          // Mostrar sección de datos después de la animación
+          document.getElementById('datos-section').classList.remove('hidden');
+          generarTablasBuses();
+        }
+      }
+
+      animationId = requestAnimationFrame(animate);
+    }
+
+    function generarTablasBuses() {
+      const tablasBuses = document.getElementById("tablas-buses");
+      let html = '';
+      
+      for (let i = 0; i < m; i++) {
+        const nombreBus = document.getElementById(`origen${i}`).value.trim() || 
+                        (tipoProblema === 'buses' ? `Bus ${i+1}` : `Origen ${i+1}`);
+        
+        html += `
+          <div class="bus-table-container">
+            <div class="bus-header">
+              <h4>${nombreBus}</h4>
+              <div class="bus-capacity">
+                <span>${tipoProblema === 'buses' ? 'Capacidad:' : 'Oferta:'}</span>
+                <input type="number" id="oferta-${i}" placeholder="${tipoProblema === 'buses' ? 'Asientos' : 'Unidades'}" min="0">
+              </div>
+            </div>
+            <table class="bus-table">
+              <thead>
+                <tr>
+                  <th>${tipoProblema === 'buses' ? 'Ciudad' : 'Destino'}</th>
+                  <th>${tipoProblema === 'buses' ? 'Pasajeros' : 'Cantidad'}</th>
+                  <th>${tipoProblema === 'buses' ? 'Costo x pasajero' : 'Costo unitario'}</th>
+                </tr>
+              </thead>
+              <tbody>`;
+        
+        for (let j = 0; j < n; j++) {
+          const nombreDestino = document.getElementById(`destino${j}`).value.trim() || 
+                              (tipoProblema === 'buses' ? `Ciudad ${j+1}` : `Destino ${j+1}`);
+          
+          html += `
+                <tr>
+                  <td>${nombreDestino}</td>
+                  <td><input type="number" id="asignacion-${i}-${j}" placeholder="Cantidad" min="0"></td>
+                  <td><input type="number" id="costo-${i}-${j}" placeholder="Costo" min="0" step="0.01"></td>
+                </tr>`;
+        }
+        
+        html += `
+              </tbody>
+            </table>
+          </div>`;
+      }
+      
+      tablasBuses.innerHTML = html;
+    }
+
+    function generarModeloMatematico() {
+      document.getElementById('modelo-matematico').classList.remove('hidden');
+      
+      // Generar función objetivo
+      let fo = "Fo = ";
+      let firstTerm = true;
+      for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+          const costo = document.getElementById(`costo-${i}-${j}`).value || 'C'+(i+1)+(j+1);
+          const variable = `X<sub>${i+1}${j+1}</sub>`;
+          
+          if (!firstTerm) fo += " + ";
+          fo += `${variable} ${costo}`;
+          firstTerm = false;
+        }
+      }
+      document.getElementById("funcion-objetivo").innerHTML = fo;
+      
+      // Generar restricciones de oferta
+      let restOferta = "";
+      for (let i = 0; i < m; i++) {
+        const oferta = document.getElementById(`oferta-${i}`).value || 'B'+(i+1);
+        restOferta += `X<sub>${i+1}1</sub>`;
+        for (let j = 1; j < n; j++) {
+          restOferta += ` + X<sub>${i+1}${j+1}</sub>`;
+        }
+        restOferta += ` ≤ ${oferta}<br>`;
+      }
+      document.getElementById("restricciones-oferta").innerHTML = restOferta;
+      
+      // Generar restricciones de demanda
+      let restDemanda = "";
+      for (let j = 0; j < n; j++) {
+        // Calcular demanda total (suma de asignaciones para esta ciudad)
+        let demandaTotal = 0;
+        let hasValue = false;
+        for (let i = 0; i < m; i++) {
+          const asignacion = document.getElementById(`asignacion-${i}-${j}`).value;
+          if (asignacion) {
+            demandaTotal += parseInt(asignacion);
+            hasValue = true;
+          }
+        }
+        const demanda = hasValue ? demandaTotal : 'D'+(j+1);
+        
+        restDemanda += `X<sub>1${j+1}</sub>`;
+        for (let i = 1; i < m; i++) {
+          restDemanda += ` + X<sub>${i+1}${j+1}</sub>`;
+        }
+        restDemanda += ` ≤ ${demanda}<br>`;
+      }
+      document.getElementById("restricciones-demanda").innerHTML = restDemanda;
+      
+      // Renderizar MathJax
+      if (typeof MathJax !== 'undefined') {
+        MathJax.typeset();
+      }
+    }
+
+    function dibujarFlecha(ctx, fromX, fromY, toX, toY, color, progress) {
+      const headLength = 12;
+      const angle = Math.atan2(toY - fromY, toX - fromX);
+      const actualToX = fromX + (toX - fromX) * progress;
+      const actualToY = fromY + (toY - fromY) * progress;
+      
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(actualToX, actualToY);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      if (progress === 1) {
+        ctx.beginPath();
+        ctx.moveTo(actualToX, actualToY);
+        ctx.lineTo(
+          actualToX - headLength * Math.cos(angle - Math.PI / 6),
+          actualToY - headLength * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.lineTo(
+          actualToX - headLength * Math.cos(angle + Math.PI / 6),
+          actualToY - headLength * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+    }
+
+    window.onload = function() {
+      actualizarEtiquetas();
+    };
+  </script>
+</body>
+</html>
