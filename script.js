@@ -134,20 +134,20 @@ function dibujarRed() {
     if (!startTime) startTime = currentTime;
     const elapsedTime = currentTime - startTime;
     const progress = Math.min(elapsedTime / duration, 1);
-    
+
     // Limpiar solo la zona central donde se dibujan las flechas.
     ctx.clearRect(origenX + 20, 50, destinoX - origenX - 40, canvas.height - 50);
-    
+
     for (let i = 0; i < m; i++) {
       for (let j = 0; j < n; j++) {
         const color = colors[(i * n + j) % colors.length];
-        dibujarFlecha(ctx, 
-                      origenX + 20, origenY[i],
-                      destinoX - 20, destinoY[j],
-                      color, progress, i, j);
+        dibujarFlecha(ctx,
+          origenX + 20, origenY[i],
+          destinoX - 20, destinoY[j],
+          color, progress, i, j);
       }
     }
-    
+
     if (progress < 1) {
       animationId = requestAnimationFrame(animate);
     } else {
@@ -168,7 +168,7 @@ function dibujarFlecha(ctx, fromX, fromY, toX, toY, color, progress, i, j) {
   const angle = Math.atan2(toY - fromY, toX - fromX);
   const actualToX = fromX + (toX - fromX) * progress;
   const actualToY = fromY + (toY - fromY) * progress;
-  
+
   // Dibuja la línea de la flecha.
   ctx.beginPath();
   ctx.moveTo(fromX, fromY);
@@ -176,7 +176,7 @@ function dibujarFlecha(ctx, fromX, fromY, toX, toY, color, progress, i, j) {
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.stroke();
-  
+
   // Dibuja el texto "Xij" (semi-transparente) cerca del nodo origen.
   const fracX = 0.15; // 15% de la distancia desde el origen
   const posX_x = fromX + (actualToX - fromX) * fracX;
@@ -188,14 +188,14 @@ function dibujarFlecha(ctx, fromX, fromY, toX, toY, color, progress, i, j) {
   ctx.fillStyle = "rgba(0,0,0,0.6)";
   // Se añade un pequeño offset para espaciar los textos.
   ctx.fillText(labelX, posX_x, posY_x - 10);
-  
+
   // Dibuja el texto "Cij" (semi-transparente) cerca del nodo destino.
   const fracC = 0.85; // 85% de la distancia desde el origen
   const posX_c = fromX + (actualToX - fromX) * fracC;
   const posY_c = fromY + (actualToY - fromY) * fracC;
   const labelC = "C" + toSubscript(i + 1) + toSubscript(j + 1);
   ctx.fillText(labelC, posX_c, posY_c - 10);
-  
+
   // Si la flecha está completa, dibuja la cabeza de la flecha.
   if (progress === 1) {
     ctx.beginPath();
@@ -224,9 +224,11 @@ function toSubscript(num) {
 function generarTablasBuses() {
   const tablasBuses = document.getElementById("tablas-buses");
   let html = '';
+
+  // Tablas para orígenes (buses)
   for (let i = 0; i < m; i++) {
     const nombreBus = document.getElementById(`origen${i}`).value.trim() ||
-      (tipoProblema === 'buses' ? `Bus ${i+1}` : `Origen ${i+1}`);
+      (tipoProblema === 'buses' ? `Bus ${i + 1}` : `Origen ${i + 1}`);
     html += `
       <div class="bus-table-container">
         <div class="bus-header">
@@ -242,13 +244,13 @@ function generarTablasBuses() {
             <tr>
               <th>${tipoProblema === 'buses' ? 'Ciudad' : 'Destino'}</th>
               <th>${tipoProblema === 'buses' ? 'Pasajeros' : 'Cantidad'}</th>
-              <th>${tipoProblema === 'buses' ? 'Costo x pasajero' : 'Envio'}</th>
+              <th>${tipoProblema === 'buses' ? 'Costo x pasajero' : 'Costo'}</th>
             </tr>
           </thead>
           <tbody>`;
     for (let j = 0; j < n; j++) {
       const nombreDestino = document.getElementById(`destino${j}`).value.trim() ||
-        (tipoProblema === 'buses' ? `Ciudad ${j+1}` : `Destino ${j+1}`);
+        (tipoProblema === 'buses' ? `Ciudad ${j + 1}` : `Destino ${j + 1}`);
       html += `
             <tr>
               <td>${nombreDestino}</td>
@@ -267,6 +269,31 @@ function generarTablasBuses() {
         </table>
       </div>`;
   }
+
+  // Sección de demandas (como una tabla horizontal)
+  html += `
+    <div class="demanda-section">
+      <h3>Demandas de las Ciudades</h3>
+      <div class="demanda-grid">
+  `;
+
+  for (let j = 0; j < n; j++) {
+    const nombreDestino = document.getElementById(`destino${j}`).value.trim() ||
+      (tipoProblema === 'buses' ? `Ciudad ${j + 1}` : `Destino ${j + 1}`);
+    html += `
+        <div class="demanda-item">
+          <label>${nombreDestino}</label>
+          <input type="number" id="demanda-${j}" placeholder="Demanda" min="0" oninput="validarNumero(this)">
+          <div class="error-message" id="error-demanda-${j}"></div>
+        </div>
+    `;
+  }
+
+  html += `
+      </div>
+    </div>
+  `;
+
   tablasBuses.innerHTML = html;
 }
 
@@ -290,31 +317,41 @@ function validarNumero(input) {
 function validarCapacidad(i) {
   const capacidadInput = document.getElementById(`oferta-${i}`);
   if (!validarNumero(capacidadInput)) return false;
+
   const capacidad = parseFloat(capacidadInput.value);
   if (isNaN(capacidad)) return true;
+
   let totalAsignado = 0;
   let error = false;
+
   for (let j = 0; j < n; j++) {
     const asignacionInput = document.getElementById(`asignacion-${i}-${j}`);
-    const asignacion = parseFloat(asignacionInput.value) || 0;
-    if (asignacion > capacidad) {
-      asignacionInput.classList.add('error');
-      document.getElementById(`error-asignacion-${i}-${j}`).textContent =
-        `No puede exceder la capacidad (${capacidad})`;
-      document.getElementById(`error-asignacion-${i}-${j}`).style.display = 'block';
+    if (!validarNumero(asignacionInput)) {
       error = true;
+      continue;
     }
-    totalAsignado += asignacion;
+
+    const asignacion = parseFloat(asignacionInput.value);
+    if (!isNaN(asignacion)) {
+      totalAsignado += asignacion;
+    }
   }
+
+  const errorElement = document.getElementById(`error-oferta-${i}`);
   if (totalAsignado > capacidad) {
+    errorElement.textContent = `La suma (${totalAsignado}) excede la capacidad (${capacidad})`;
+    errorElement.style.display = 'block';
     capacidadInput.classList.add('error');
-    document.getElementById(`error-oferta-${i}`).textContent =
-      `La suma de asignaciones (${totalAsignado}) excede la capacidad (${capacidad})`;
-    document.getElementById(`error-oferta-${i}`).style.display = 'block';
-    return false;
+    error = true;
+  } else {
+    errorElement.textContent = '';
+    errorElement.style.display = 'none';
+    capacidadInput.classList.remove('error');
   }
+
   return !error;
 }
+
 
 // Valida cada asignación en relación con la capacidad.
 function validarAsignacion(i, j) {
@@ -347,15 +384,16 @@ function validarAsignacion(i, j) {
     return true;
   }
 }
+// Modelo matematico 
 
-// Genera el modelo matemático 
 function generarModeloMatematico() {
   let valido = true;
+
+  // Validar capacidades y asignaciones
   for (let i = 0; i < m; i++) {
-    if (!validarCapacidad(i)) {
-      valido = false;
-    }
+    if (!validarCapacidad(i)) valido = false;
   }
+
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
       if (!validarNumero(document.getElementById(`asignacion-${i}-${j}`))) {
@@ -363,51 +401,203 @@ function generarModeloMatematico() {
       }
     }
   }
+
   if (!valido) {
     alert("Por favor corrija los errores antes de generar el modelo matemático");
     return;
   }
+
   document.getElementById('modelo-matematico').classList.remove('hidden');
+
+  // -------- FUNCIÓN OBJETIVO --------
   let fo = "Min Z = ";
-  let terms = [];
+  const terms = [];
+
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
-      const coeficiente = document.getElementById(`costo-${i}-${j}`).value || ('C' + (i + 1) + (j + 1));
-      terms.push(`${coeficiente}x${toSubscript(i + 1)}${toSubscript(j + 1)}`);
+      const costo = document.getElementById(`costo-${i}-${j}`).value || `C${i + 1}${j + 1}`;
+      const xVal = document.getElementById(`asignacion-${i}-${j}`).value || `x${toSubscript(i + 1)}${toSubscript(j + 1)}`;
+      terms.push(`${costo}×${xVal}`);
     }
   }
+
   document.getElementById("funcion-objetivo").innerHTML = fo + terms.join(" + ");
+
+  // -------- RESTRICCIONES DE OFERTA --------
   let restOferta = "";
   for (let i = 0; i < m; i++) {
-    const oferta = document.getElementById(`oferta-${i}`).value || ('B' + (i+1));
-    let restriccion = `x${toSubscript(i + 1)}${toSubscript(1)}`;
-    for (let j = 1; j < n; j++) {
-      restriccion += ` + x${toSubscript(i + 1)}${toSubscript(j + 1)}`;
+    const oferta = document.getElementById(`oferta-${i}`).value || `B${i + 1}`;
+    const terminos = [];
+
+    for (let j = 0; j < n; j++) {
+      const xVal = document.getElementById(`asignacion-${i}-${j}`).value || `x${toSubscript(i + 1)}${toSubscript(j + 1)}`;
+      terminos.push(xVal);
     }
-    restOferta += restriccion + ` ≤ ${oferta}<br>`;
+
+    restOferta += `${terminos.join(" + ")} ≤ ${oferta}<br>`;
   }
+
   document.getElementById("restricciones-oferta").innerHTML = restOferta;
+
+  // -------- RESTRICCIONES DE DEMANDA --------
   let restDemanda = "";
   for (let j = 0; j < n; j++) {
-    let demandaTotal = 0;
-    let hasValue = false;
+    const demanda = document.getElementById(`demanda-${j}`).value || `D${j + 1}`;
+    const terminos = [];
+
     for (let i = 0; i < m; i++) {
-      const asignacion = document.getElementById(`asignacion-${i}-${j}`).value;
-      if (asignacion) {
-        demandaTotal += parseInt(asignacion);
-        hasValue = true;
-      }
+      const xVal = document.getElementById(`asignacion-${i}-${j}`).value || `x${toSubscript(i + 1)}${toSubscript(j + 1)}`;
+      terminos.push(xVal);
     }
-    const demanda = hasValue ? demandaTotal : ('D' + (j+1));
-    let restriccion = `x${toSubscript(1)}${toSubscript(j + 1)}`;
-    for (let i = 1; i < m; i++) {
-      restriccion += ` + x${toSubscript(i+1)}${toSubscript(j+1)}`;
-    }
-    restDemanda += restriccion + ` ≤ ${demanda}<br>`;
+
+    restDemanda += `${terminos.join(" + ")} = ${demanda}<br>`;
   }
+
   document.getElementById("restricciones-demanda").innerHTML = restDemanda;
 }
 
-window.onload = function() {
+
+function resolverEsquinaNoroeste() {
+  // Capturar valores de oferta (capacidad)
+  const ofertas = [];
+  for (let i = 0; i < m; i++) {
+    const valor = parseFloat(document.getElementById(`oferta-${i}`).value);
+    if (isNaN(valor) || valor < 0) {
+      alert(`Ingrese una oferta válida para el origen ${i + 1}`);
+      return;
+    }
+    ofertas.push(valor);
+  }
+
+  // Capturar valores de demanda
+  const demandas = [];
+  for (let j = 0; j < n; j++) {
+    const valor = parseFloat(document.getElementById(`demanda-${j}`).value);
+    if (isNaN(valor) || valor < 0) {
+      alert(`Ingrese una demanda válida para el destino ${j + 1}`);
+      return;
+    }
+    demandas.push(valor);
+  }
+
+  // Capturar matriz de costos
+  const costos = [];
+  for (let i = 0; i < m; i++) {
+    costos[i] = [];
+    for (let j = 0; j < n; j++) {
+      const valor = parseFloat(document.getElementById(`costo-${i}-${j}`).value);
+      if (isNaN(valor) || valor < 0) {
+        alert(`Ingrese un costo válido para la ruta Origen ${i + 1} → Destino ${j + 1}`);
+        return;
+      }
+      costos[i][j] = valor;
+    }
+  }
+
+  // Verificar balance (suma ofertas = suma demandas)
+  const totalOferta = ofertas.reduce((a, b) => a + b, 0);
+  const totalDemanda = demandas.reduce((a, b) => a + b, 0);
+
+  if (totalOferta !== totalDemanda) {
+    alert(`El problema no está balanceado.\nSuma ofertas: ${totalOferta}\nSuma demandas: ${totalDemanda}`);
+    return;
+  }
+
+  // Inicializar matriz de solución
+  const solucion = Array(m).fill().map(() => Array(n).fill(0));
+  let i = 0, j = 0;
+  const ofertasRestantes = [...ofertas];
+  const demandasRestantes = [...demandas];
+
+  // Algoritmo de la esquina noroeste
+  while (i < m && j < n) {
+    const asignacion = Math.min(ofertasRestantes[i], demandasRestantes[j]);
+    solucion[i][j] = asignacion;
+    ofertasRestantes[i] -= asignacion;
+    demandasRestantes[j] -= asignacion;
+
+    if (ofertasRestantes[i] === 0 && i < m - 1) {
+      i++;
+    } else if (demandasRestantes[j] === 0 && j < n - 1) {
+      j++;
+    } else {
+      i++;
+      j++;
+    }
+  }
+
+  // Calcular costo total
+  let costoTotal = 0;
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      costoTotal += solucion[i][j] * costos[i][j];
+    }
+  }
+
+  // Mostrar resultados
+  mostrarResultadoEsquinaNoroeste(solucion, costos, costoTotal);
+}
+
+function mostrarResultadoEsquinaNoroeste(solucion, costoTotal) {
+  const resultado = document.getElementById('resultado');
+  resultado.innerHTML = '<h3>Solución por Método de la Esquina Noroeste</h3>';
+
+  let tabla = '<table class="noroeste-table">';
+
+  // Encabezados
+  tabla += '<thead><tr><th></th>';
+  for (let j = 0; j < n; j++) {
+    const nombreDestino = document.getElementById(`destino${j}`).value.trim() ||
+      (tipoProblema === 'buses' ? `Ciudad${j + 1}` : `Destino${j + 1}`);
+    tabla += `<th>${nombreDestino}</th>`;
+  }
+  tabla += '<th>Oferta</th></tr></thead>';
+
+  // Filas de datos
+  tabla += '<tbody>';
+  for (let i = 0; i < m; i++) {
+    const nombreOrigen = document.getElementById(`origen${i}`).value.trim() ||
+      (tipoProblema === 'buses' ? `Bus${i + 1}` : `Origen${i + 1}`);
+    tabla += `<tr><th>${nombreOrigen}</th>`;
+
+    for (let j = 0; j < n; j++) {
+      const asignado = solucion[i][j]; // Asignación del método
+      const valorUsuario = document.getElementById(`asignacion-${i}-${j}`)?.value || "";
+      const variableNombre = `x${i + 1}${j + 1}`;
+
+      tabla += `<td class="diagonal-cell">
+            <div class="diagonal-top" style="color: red; font-size: 13px; font-weight: bold;">
+              ${asignado > 0 ? asignado : ''}
+            </div>
+            <div class="diagonal-bottom" style="color: gray; font-size: 13px; font-weight: bold;">
+              ${valorUsuario !== "" ? valorUsuario : ''}
+            </div>
+          </td>`;
+    }
+
+    const oferta = document.getElementById(`oferta-${i}`).value || '0';
+    tabla += `<td class="oferta-cell">${oferta}</td></tr>`;
+  }
+
+  // Fila demandas
+  tabla += '<tr class="demanda-row"><th>Demandas</th>';
+  for (let j = 0; j < n; j++) {
+    const demanda = document.getElementById(`demanda-${j}`).value || '0';
+    tabla += `<td class="demanda-cell">${demanda}</td>`;
+  }
+
+  const totalOferta = Array.from({ length: m }, (_, i) =>
+    parseFloat(document.getElementById(`oferta-${i}`).value) || 0
+  ).reduce((a, b) => a + b, 0);
+
+  tabla += `<td class="total-cell">${totalOferta}</td></tr>`;
+  tabla += '</tbody></table>';
+  tabla += `<p class="total-cost"><strong>Costo Total:</strong> ${costoTotal}</p>`;
+
+  resultado.innerHTML = tabla;
+}
+
+
+window.onload = function () {
   actualizarEtiquetas();
 };
