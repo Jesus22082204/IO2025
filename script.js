@@ -898,6 +898,7 @@ function dibujarGrafoSolucion(solucion, costos) {
     ctx.textAlign = "right";
     ctx.fillText(nombre, origenX - 30, y + 35);
   }
+  //
 
   // Dibujar etiqueta de grupo para destinos (mismo estilo que dibujarRed)
   ctx.font = "bold 14px Arial";
