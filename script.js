@@ -759,7 +759,6 @@ function mostrarResultadoEsquinaNoroeste(solucion, costos, ofertas, demandas, co
 
   tabla += `<td class="total-cell">${totalOferta}</td></tr>`;
   tabla += '</tbody></table>';
-  tabla += `<p class="total-cost"><strong>Costo Total:</strong> ${costoTotal}</p>`;
 
   resultado.innerHTML = tabla;
 
@@ -769,19 +768,21 @@ function mostrarResultadoEsquinaNoroeste(solucion, costos, ofertas, demandas, co
 
   // 2.1 Función objetivo final (solo rutas utilizadas)
   contenidoHTML += '<h4>Función Objetivo Final (solo rutas utilizadas):</h4>';
-  let funcionObjetivoFinal = "Min Z = ";
-  const terminosValidos = [];
+let funcionObjetivoFinal = "Min Z = ";
+const terminosValidos = [];
 
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < n; j++) {
-      if (solucion[i][j] > 0) {
-        terminosValidos.push(`${costos[i][j]} × ${solucion[i][j]}`);
-      }
+for (let i = 0; i < m; i++) {
+  for (let j = 0; j < n; j++) {
+    if (solucion[i][j] > 0) {
+      terminosValidos.push(`${costos[i][j]} × ${solucion[i][j]}`);
     }
   }
+}
 
-  contenidoHTML += `<div class="funcion-objetivo-simple">${funcionObjetivoFinal}${terminosValidos.join(" + ")}</div>`;
+contenidoHTML += `<div class="funcion-objetivo-simple">${funcionObjetivoFinal}${terminosValidos.join(" + ")}</div>`;
 
+// Agregar la variable adicional
+contenidoHTML += `<div class="variable-adicional">Función Objetivo Final = ${costoTotal}</div>`;
   // 2.2 Restricciones de oferta finales
   contenidoHTML += '<h4>Restricciones de Oferta Finales:</h4>';
   let restriccionesOferta = '';
@@ -844,132 +845,108 @@ function dibujarGrafoSolucion(solucion, costos) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Configurar coordenadas
+  // Configurar coordenadas (igual que en dibujarRed)
   const origenX = 200, destinoX = 700;
   const spacingY = (canvas.height - 100) / Math.max(m, n);
   let origenY = [], destinoY = [];
 
-  // Dibujar etiqueta de grupo para orígenes
-  ctx.font = "bold 16px Arial";
+  // Dibujar etiqueta de grupo para orígenes (mismo estilo que dibujarRed)
+  ctx.font = "bold 14px Arial";
   ctx.textAlign = "center";
   ctx.fillStyle = "#00796b";
   ctx.fillText(tipoProblema === 'buses' ? "Buses" : "Orígenes", origenX, 40);
 
-  // Dibujar nodos de orígenes (buses)
+  // Dibujar nodos de orígenes (mismo estilo que dibujarRed)
   for (let i = 0; i < m; i++) {
     let y = 70 + i * spacingY;
     origenY.push(y);
     ctx.beginPath();
-    ctx.arc(origenX, y, 30, 0, 2 * Math.PI);
+    ctx.arc(origenX, y, 20, 0, 2 * Math.PI); // Radio 20 como en dibujarRed
     ctx.fillStyle = "#b2dfdb";
     ctx.fill();
     ctx.strokeStyle = "#00796b";
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Mostrar nombre y oferta
-    const nombre = document.getElementById(`origen${i}`).value.trim() ||
-      (tipoProblema === 'buses' ? `Bus ${i + 1}` : `O${i + 1}`);
-    const oferta = document.getElementById(`oferta-${i}`).value || "0";
-
+    // Icono dentro del nodo (mismo estilo)
     const icon = tipoProblema === 'buses' ? '🚌' : '📦';
-    ctx.font = "20px Arial";
+    ctx.font = "18px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#333";
-    ctx.fillText(icon, origenX, y - 10);
+    ctx.fillText(icon, origenX, y);
 
-    ctx.font = "14px Arial";
-    ctx.fillText(nombre, origenX, y + 12);
+    // Nombre del origen debajo del nodo (mismo estilo)
+    const nombre = document.getElementById(`origen${i}`).value.trim() ||
+      (tipoProblema === 'buses' ? `Bus ${i + 1}` : `O${i + 1}`);
     ctx.font = "12px Arial";
-    ctx.fillStyle = "#006064";
-    ctx.fillText(`(${oferta})`, origenX, y + 30);
+    ctx.textAlign = "right";
+    ctx.fillText(nombre, origenX - 30, y + 35);
   }
 
-  // Dibujar etiqueta de grupo para destinos
-  ctx.font = "bold 16px Arial";
+  // Dibujar etiqueta de grupo para destinos (mismo estilo que dibujarRed)
+  ctx.font = "bold 14px Arial";
   ctx.textAlign = "center";
   ctx.fillStyle = "#2e7d32";
   ctx.fillText(tipoProblema === 'buses' ? "Ciudades" : "Destinos", destinoX, 40);
 
-  // Dibujar nodos de destinos (ciudades)
+  // Dibujar nodos de destinos (mismo estilo que dibujarRed)
   for (let j = 0; j < n; j++) {
     let y = 70 + j * spacingY;
     destinoY.push(y);
     ctx.beginPath();
-    ctx.arc(destinoX, y, 30, 0, 2 * Math.PI);
+    ctx.arc(destinoX, y, 20, 0, 2 * Math.PI); // Radio 20 como en dibujarRed
     ctx.fillStyle = "#c8e6c9";
     ctx.fill();
     ctx.strokeStyle = "#2e7d32";
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Mostrar nombre y demanda  
-    const nombre = document.getElementById(`destino${j}`).value.trim() ||
-      (tipoProblema === 'buses' ? `Ciudad ${j + 1}` : `D${j + 1}`);
-    const demanda = document.getElementById(`demanda-${j}`).value || "0";
-
+    // Icono dentro del nodo (mismo estilo)
     const icon = tipoProblema === 'buses' ? '🏙️' : '📍';
-    ctx.font = "20px Arial";
+    ctx.font = "18px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#333";
-    ctx.fillText(icon, destinoX, y - 10);
+    ctx.fillText(icon, destinoX, y);
 
-    ctx.font = "14px Arial";
-    ctx.fillText(nombre, destinoX, y + 12);
+    // Nombre del destino debajo del nodo (mismo estilo)
+    const nombre = document.getElementById(`destino${j}`).value.trim() ||
+      (tipoProblema === 'buses' ? `Ciudad ${j + 1}` : `D${j + 1}`);
     ctx.font = "12px Arial";
-    ctx.fillStyle = "#006064";
-    ctx.fillText(`(${demanda})`, destinoX, y + 30);
+    ctx.textAlign = "left";
+    ctx.fillText(nombre, destinoX + 30, y + 35);
   }
 
   // Dibujar rutas válidas (con asignación > 0)
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
       if (solucion[i][j] > 0) {
-        // Dibujar flecha con un grosor proporcional a la asignación
-        const maxAsignacion = Math.max(...solucion.flat());
-        const minGrosor = 2, maxGrosor = 8;
-        const grosor = minGrosor + (maxGrosor - minGrosor) * (solucion[i][j] / maxAsignacion);
-
-        // Color basado en el origen
-        const color = colors[i % colors.length];
-
-        // Dibujar flecha completa
-        dibujarFlechaCompleta(ctx, origenX + 30, origenY[i], destinoX - 30, destinoY[j], color, grosor);
-
-        // Mostrar información de la asignación
-        const posX = (origenX + destinoX) / 2;
-        const posY = (origenY[i] + destinoY[j]) / 2 - 15;
-
-        ctx.font = "bold 14px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#000";
-        ctx.fillText(`${solucion[i][j]}`, posX, posY);
-
-        ctx.font = "12px Arial";
-        ctx.fillStyle = "#555";
-        ctx.fillText(`Costo: ${costos[i][j]}`, posX, posY + 18);
+        // Color basado en la misma lógica que dibujarRed
+        const color = colors[(i * n + j) % colors.length];
+        
+        // Dibujar flecha (mismo estilo que dibujarRed pero siempre completa)
+        dibujarFlechaSolucion(ctx, origenX + 20, origenY[i], destinoX - 20, destinoY[j], 
+                             color, solucion[i][j], costos[i][j]);
       }
     }
   }
 }
 
-// Función para dibujar flecha completa
-function dibujarFlechaCompleta(ctx, fromX, fromY, toX, toY, color, grosor) {
-  const headLength = 15;  // Longitud de la punta de la flecha
+// Función para dibujar flecha de solución (basada en dibujarFlecha de dibujarRed)
+function dibujarFlechaSolucion(ctx, fromX, fromY, toX, toY, color, asignacion, costo) {
+  const headLength = 12; // Mismo tamaño que en dibujarRed
   const angle = Math.atan2(toY - fromY, toX - fromX);
 
-  // Dibujar línea de la flecha
+  // Dibujar línea de la flecha (mismo estilo)
   ctx.beginPath();
   ctx.moveTo(fromX, fromY);
   ctx.lineTo(toX, toY);
   ctx.strokeStyle = color;
-  ctx.lineWidth = grosor;
+  ctx.lineWidth = 2; // Mismo grosor que en dibujarRed
   ctx.stroke();
 
-  // Dibujar punta de la flecha
+  // Dibujar cabeza de la flecha (mismo estilo que en dibujarRed)
   ctx.beginPath();
   ctx.moveTo(toX, toY);
   ctx.lineTo(
@@ -983,6 +960,22 @@ function dibujarFlechaCompleta(ctx, fromX, fromY, toX, toY, color, grosor) {
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
+
+  // Dibujar texto de asignación (cerca del origen, mismo estilo que "Xij" en dibujarRed)
+  const fracAsignacion = 0.15; // 15% de la distancia desde el origen
+  const posX_asignacion = fromX + (toX - fromX) * fracAsignacion;
+  const posY_asignacion = fromY + (toY - fromY) * fracAsignacion;
+  ctx.font = "22px Arial"; // Mismo tamaño que en dibujarRed
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(0,0,0,0.6)"; // Misma transparencia
+  ctx.fillText(asignacion.toString(), posX_asignacion, posY_asignacion - 10);
+
+  // Dibujar texto de costo (cerca del destino, mismo estilo que "Cij" en dibujarRed)
+  const fracCosto = 0.85; // 85% de la distancia desde el origen
+  const posX_costo = fromX + (toX - fromX) * fracCosto;
+  const posY_costo = fromY + (toY - fromY) * fracCosto;
+  ctx.fillText(`$${costo}`, posX_costo, posY_costo - 10);
 }
 
 
