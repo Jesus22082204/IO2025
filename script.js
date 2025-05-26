@@ -16,8 +16,48 @@ function actualizarEtiquetas() {
 
 // Genera dinámicamente los campos de entrada para orígenes y destinos.
 function generarInputs() {
-  m = Math.min(4, parseInt(document.getElementById("origenes").value));
-  n = Math.min(4, parseInt(document.getElementById("destinos").value));
+  let origenesInput = document.getElementById("origenes");
+  let destinosInput = document.getElementById("destinos");
+  let errorOrigenes = document.getElementById("error-origenes");
+  let errorDestinos = document.getElementById("error-destinos");
+
+  // Validar máximo 4 y mínimo 1
+  let origenesVal = parseInt(origenesInput.value);
+  let destinosVal = parseInt(destinosInput.value);
+
+  let valido = true;
+  if (isNaN(origenesVal) || origenesVal < 1) {
+    errorOrigenes.textContent = "Debe ser al menos 1";
+    origenesInput.classList.add('error');
+    valido = false;
+  } else if (origenesVal > 4) {
+    errorOrigenes.textContent = "El máximo permitido es 4";
+    origenesInput.value = 4;
+    origenesVal = 4;
+    origenesInput.classList.add('error');
+    valido = false;
+  } else {
+    errorOrigenes.textContent = "";
+    origenesInput.classList.remove('error');
+  }
+
+  if (isNaN(destinosVal) || destinosVal < 1) {
+    errorDestinos.textContent = "Debe ser al menos 1";
+    destinosInput.classList.add('error');
+    valido = false;
+  } else if (destinosVal > 4) {
+    errorDestinos.textContent = "El máximo permitido es 4";
+    destinosInput.value = 4;
+    destinosVal = 4;
+    destinosInput.classList.add('error');
+    valido = false;
+  } else {
+    errorDestinos.textContent = "";
+    destinosInput.classList.remove('error');
+  }
+
+  m = Math.min(4, origenesVal);
+  n = Math.min(4, destinosVal);
 
   const contOrigenes = document.getElementById("inputs-origenes");
   const contDestinos = document.getElementById("inputs-destinos");
@@ -43,7 +83,46 @@ function generarInputs() {
   // Ocultar secciones secundarias
   document.getElementById('datos-section').classList.add('hidden');
   document.getElementById('modelo-matematico').classList.add('hidden');
+  chequearMostrarRed();
 }
+
+function chequearMostrarRed() {
+  const origenesInput = document.getElementById("origenes");
+  const destinosInput = document.getElementById("destinos");
+  const btn = document.getElementById("btn-mostrar-red");
+
+  // Ambos campos deben ser válidos y no estar vacíos ni en error
+  let valido = true;
+  if (
+    isNaN(parseInt(origenesInput.value)) || 
+    parseInt(origenesInput.value) < 1 || 
+    parseInt(origenesInput.value) > 4 ||
+    origenesInput.classList.contains('error')
+  ) {
+    valido = false;
+  }
+  if (
+    isNaN(parseInt(destinosInput.value)) || 
+    parseInt(destinosInput.value) < 1 || 
+    parseInt(destinosInput.value) > 4 ||
+    destinosInput.classList.contains('error')
+  ) {
+    valido = false;
+  }
+  btn.disabled = !valido;
+}
+
+// Llama a esta función en los eventos de los inputs
+document.getElementById("origenes").addEventListener("input", function() {
+  generarInputs(); 
+  validarNumeroMenu(this); 
+  chequearMostrarRed();
+});
+document.getElementById("destinos").addEventListener("input", function() {
+  generarInputs(); 
+  validarNumeroMenu(this); 
+  chequearMostrarRed();
+});
 
 // Dibuja la red en el canvas, los nodos y anima las flechas.
 function dibujarRed() {
@@ -158,7 +237,56 @@ function dibujarRed() {
     }
   }
   animationId = requestAnimationFrame(animate);
+  mostrarFormulacionSimbolica();
 }
+
+function mostrarFormulacionSimbolica() {
+  // Obtén la cantidad de orígenes y destinos
+  const m = parseInt(document.getElementById("origenes").value);
+  const n = parseInt(document.getElementById("destinos").value);
+
+  // Función Objetivo
+  let funcionObjetivo = 'Min Z = ';
+  const terminos = [];
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      terminos.push(`C<sub>${i}${j}</sub>·X<sub>${i}${j}</sub>`);
+    }
+  }
+  funcionObjetivo += terminos.join(' + ');
+
+  // Restricciones de oferta
+  let restriccionesOferta = '';
+  for (let i = 1; i <= m; i++) {
+    const sumandos = [];
+    for (let j = 1; j <= n; j++) {
+      sumandos.push(`X<sub>${i}${j}</sub>`);
+    }
+    restriccionesOferta += `${sumandos.join(' + ')} ≤ Oferta<sub>${i}</sub><br>`;
+  }
+
+  // Restricciones de demanda
+  let restriccionesDemanda = '';
+  for (let j = 1; j <= n; j++) {
+    const sumandos = [];
+    for (let i = 1; i <= m; i++) {
+      sumandos.push(`X<sub>${i}${j}</sub>`);
+    }
+    restriccionesDemanda += `${sumandos.join(' + ')} = Demanda<sub>${j}</sub><br>`;
+  }
+
+  // Mostrar en el div
+  document.getElementById('formulacion-simbolica').innerHTML = `
+    <h4>Función Objetivo:</h4>
+    <div class="formula">${funcionObjetivo}</div>
+    <h4>Restricciones de oferta:</h4>
+    <div class="formula">${restriccionesOferta}</div>
+    <h4>Restricciones de demanda:</h4>
+    <div class="formula">${restriccionesDemanda}</div>
+  `;
+}
+
+
 
 // Función que dibuja cada flecha y coloca los textos sobre la línea.
 // Se coloca el texto "Xij" cerca del nodo origen y el texto "Cij" cerca del nodo destino.
@@ -235,7 +363,7 @@ function generarTablasBuses() {
           <h4>${nombreBus}</h4>
           <div class="bus-capacity">
             <span>${tipoProblema === 'buses' ? 'Capacidad:' : 'Oferta:'}</span>
-            <input type="number" id="oferta-${i}" placeholder="${tipoProblema === 'buses' ? 'Asientos' : 'Unidades'}" min="0" oninput="validarNumero(this)" onchange="validarCapacidad(${i})">
+            <input type="number" id="oferta-${i}" placeholder="${tipoProblema === 'buses' ? 'Asientos' : 'Unidades'}" min="0" required oninput="validarNumero(this)" onchange="validarCapacidad(${i})">
             <div class="error-message" id="error-oferta-${i}"></div>
           </div>
         </div>
@@ -255,11 +383,11 @@ function generarTablasBuses() {
             <tr>
               <td>${nombreDestino}</td>
               <td>
-                <input type="number" id="asignacion-${i}-${j}" placeholder="Cantidad" min="0" oninput="validarNumero(this)" onchange="validarAsignacion(${i}, ${j})">
+                <input type="number" id="asignacion-${i}-${j}" placeholder="Cantidad" min="0" required oninput="validarNumero(this)" onchange="validarAsignacion(${i}, ${j})">
                 <div class="error-message" id="error-asignacion-${i}-${j}"></div>
               </td>
               <td>
-                <input type="number" id="costo-${i}-${j}" placeholder="Costo" min="0" step="0.01" oninput="validarNumero(this)">
+                <input type="number" id="costo-${i}-${j}" placeholder="Costo" min="0" required step="0.01" oninput="validarNumero(this)">
                 <div class="error-message" id="error-costo-${i}-${j}"></div>
               </td>
             </tr>`;
@@ -283,7 +411,7 @@ function generarTablasBuses() {
     html += `
         <div class="demanda-item">
           <label>${nombreDestino}</label>
-          <input type="number" id="demanda-${j}" placeholder="Demanda" min="0" oninput="validarNumero(this)">
+          <input type="number" id="demanda-${j}" placeholder="Demanda" min="0" required oninput="validarNumero(this)">
           <div class="error-message" id="error-demanda-${j}"></div>
         </div>
     `;
@@ -297,17 +425,53 @@ function generarTablasBuses() {
   tablasBuses.innerHTML = html;
 }
 
-// Valida que la entrada sea un número válido (≥ 0).
+// Modifica la validación para solo aceptar valores >= 1 y no vacíos
 function validarNumero(input) {
   const errorId = input.id.replace(/^[a-z-]+/, 'error-$&');
   const errorElement = document.getElementById(errorId);
-  if (isNaN(input.value) || input.value < 0) {
+
+  // Permitir cero en oferta, asignaciones, costo, demanda
+  const permiteCero =
+    input.id.startsWith('oferta-') ||
+    input.id.startsWith('asignacion-') ||
+    input.id.startsWith('costo-') ||
+    input.id.startsWith('demanda-');
+
+  if (
+    isNaN(input.value) ||
+    input.value === "" ||
+    (!permiteCero && Number(input.value) < 1) ||
+    (permiteCero && Number(input.value) < 0) ||
+    !/^\d+$/.test(input.value)
+  ) {
     input.classList.add('error');
-    errorElement.textContent = "Ingrese un número válido (≥ 0)";
+    errorElement.textContent = permiteCero
+      ? "Ingrese un número entero mayor o igual a 0"
+      : "Ingrese un número entero positivo (> 0)";
     errorElement.style.display = 'block';
     return false;
   } else {
     input.classList.remove('error');
+    errorElement.style.display = 'none';
+    return true;
+  }
+}
+
+function validarNumeroMenu(input) {
+  const errorElement = document.getElementById('error-' + input.id);
+  if (
+    isNaN(input.value) ||
+    input.value === "" ||
+    Number(input.value) < 1 ||
+    !/^\d+$/.test(input.value)
+  ) {
+    input.classList.add('error');
+    errorElement.textContent = "Ingrese un número entero positivo (> 0)";
+    errorElement.style.display = 'block';
+    return false;
+  } else {
+    input.classList.remove('error');
+    errorElement.textContent = "";
     errorElement.style.display = 'none';
     return true;
   }
