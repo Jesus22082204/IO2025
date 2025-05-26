@@ -573,15 +573,22 @@ function generarModeloMatematico() {
 
   document.getElementById('modelo-matematico').classList.remove('hidden');
 
-  // -------- FUNCIÓN OBJETIVO --------
+   // -------- FUNCIÓN OBJETIVO --------
   let fo = "Min Z = ";
   const terms = [];
 
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
       const costo = document.getElementById(`costo-${i}-${j}`).value || `C${i + 1}${j + 1}`;
-      const xVal = document.getElementById(`asignacion-${i}-${j}`).value || `x${toSubscript(i + 1)}${toSubscript(j + 1)}`;
-      terms.push(`${costo}×${xVal}`);
+      const asignacionValor = document.getElementById(`asignacion-${i}-${j}`).value;
+      const simboloX = `x${toSubscript(i + 1)}${toSubscript(j + 1)}`;
+      
+      // Si hay valor de asignación, mostrar asignación × símbolo, sino solo costo × símbolo
+      if (asignacionValor && asignacionValor !== "") {
+        terms.push(`${asignacionValor}${simboloX}`);
+      } else {
+        terms.push(`${costo}${simboloX}`);
+      }
     }
   }
 
@@ -766,23 +773,32 @@ function mostrarResultadoEsquinaNoroeste(solucion, costos, ofertas, demandas, co
   contenidoHTML += tabla;
   contenidoHTML += '<div class="modelo-matematico">';
 
-  // 2.1 Función objetivo final (solo rutas utilizadas)
-  contenidoHTML += '<h4>Función Objetivo Final (solo rutas utilizadas):</h4>';
-let funcionObjetivoFinal = "Min Z = ";
-const terminosValidos = [];
+  // 2.1 Función objetivo final (asignación × solución)
+  contenidoHTML += '<h4>Función Objetivo Final:</h4>';
+  let funcionObjetivoFinal = "Min Z = ";
+  const terminosValidos = [];
+  let valorFuncionObjetivo = 0;
 
-for (let i = 0; i < m; i++) {
-  for (let j = 0; j < n; j++) {
-    if (solucion[i][j] > 0) {
-      terminosValidos.push(`${costos[i][j]} × ${solucion[i][j]}`);
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      if (solucion[i][j] > 0) {
+        // Obtener la asignación que ingresó el usuario
+        const asignacionUsuario = parseFloat(document.getElementById(`asignacion-${i}-${j}`).value) || 0;
+        
+        // Multiplicar asignación del usuario × solución del método
+        const producto = asignacionUsuario * solucion[i][j];
+        valorFuncionObjetivo += producto;
+        
+        terminosValidos.push(`${asignacionUsuario} × ${solucion[i][j]}`);
+      }
     }
   }
-}
 
-contenidoHTML += `<div class="funcion-objetivo-simple">${funcionObjetivoFinal}${terminosValidos.join(" + ")}</div>`;
+  contenidoHTML += `<div class="funcion-objetivo-simple">${funcionObjetivoFinal}${terminosValidos.join(" + ")}</div>`;
 
-// Agregar la variable adicional
-contenidoHTML += `<div class="variable-adicional">Función Objetivo Final = ${costoTotal}</div>`;
+  // Agregar el valor final de la función objetivo
+  contenidoHTML += `<div class="variable-adicional">Función Objetivo Final = ${valorFuncionObjetivo}</div>`;
+
   // 2.2 Restricciones de oferta finales
   contenidoHTML += '<h4>Restricciones de Oferta Finales:</h4>';
   let restriccionesOferta = '';
@@ -835,7 +851,6 @@ contenidoHTML += `<div class="variable-adicional">Función Objetivo Final = ${co
 
   // Dibujar el grafo de rutas
   dibujarGrafoSolucion(solucion, costos);
-
 }
 
 function dibujarGrafoSolucion(solucion, costos) {
